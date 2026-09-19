@@ -7,12 +7,18 @@ interface MedicationGridProps {
   medications: MedicationConfig[];
   logs: DoseLogs;
   onLogDose: (med: MedicationConfig) => void;
+  onUpdateLastDose: (med: MedicationConfig, newTimestamp: string) => void;
+  onDeleteLastDose: (med: MedicationConfig) => void;
+  onAddDoseWithTime: (med: MedicationConfig, timestamp: string) => void;
 }
 
 export const MedicationGrid: React.FC<MedicationGridProps> = ({
   medications,
   logs,
   onLogDose,
+  onUpdateLastDose,
+  onDeleteLastDose,
+  onAddDoseWithTime,
 }) => {
   return (
     <Grid container spacing={3}>
@@ -22,6 +28,9 @@ export const MedicationGrid: React.FC<MedicationGridProps> = ({
             med={med}
             logs={logs[med.id] || []}
             onLogDose={onLogDose}
+            onUpdateLastDose={onUpdateLastDose}
+            onDeleteLastDose={onDeleteLastDose}
+            onAddDoseWithTime={onAddDoseWithTime}
           />
         </Grid>
       ))}

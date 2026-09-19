@@ -49,3 +49,47 @@ export const getTimeRemaining = (nextDoseTime: Date | null): string => {
   }
   return `${diffMins}m remaining`;
 };
+
+/**
+ * Convert a Date or ISO string to format required by <input type="datetime-local"> (YYYY-MM-DDTHH:mm)
+ */
+export const toDateTimeLocalString = (dateInput?: Date | string | null): string => {
+  const d = dateInput ? new Date(dateInput) : new Date();
+  const pad = (n: number) => String(n).padStart(2, '0');
+  const year = d.getFullYear();
+  const month = pad(d.getMonth() + 1);
+  const day = pad(d.getDate());
+  const hours = pad(d.getHours());
+  const minutes = pad(d.getMinutes());
+  return `${year}-${month}-${day}T${hours}:${minutes}`;
+};
+
+/**
+ * Convert datetime-local value (YYYY-MM-DDTHH:mm) to ISO string
+ */
+export const fromDateTimeLocalString = (dtString: string): string => {
+  return new Date(dtString).toISOString();
+};
+
+/**
+ * Extract local HH:mm for <input type="time">
+ */
+export const toTimeInputValue = (dateInput?: Date | string | null): string => {
+  const d = dateInput ? new Date(dateInput) : new Date();
+  const pad = (n: number) => String(n).padStart(2, '0');
+  const hours = pad(d.getHours());
+  const minutes = pad(d.getMinutes());
+  return `${hours}:${minutes}`;
+};
+
+/**
+ * Combine HH:mm with a base date (keeping the day) and return ISO string
+ */
+export const applyTimeToDate = (timeStr: string, baseDateInput?: Date | string | null): string => {
+  const [h, m] = timeStr.split(':').map(Number);
+  const base = baseDateInput ? new Date(baseDateInput) : new Date();
+  const result = new Date(base);
+  result.setHours(h, m, 0, 0);
+  return result.toISOString();
+};
+

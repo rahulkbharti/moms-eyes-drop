@@ -1,4 +1,4 @@
-import type React from 'react';
+import React, { useState } from 'react';
 import {
   Paper,
   Box,
@@ -7,11 +7,13 @@ import {
   LinearProgress,
   Grid,
   Button,
+  Tooltip,
 } from '@mui/material';
 import {
   Medication as MedicationIcon,
   CheckCircle as CheckCircleIcon,
   NotificationsActive as AlarmIcon,
+  Edit as EditIcon,
 } from '@mui/icons-material';
 import type { MedicationConfig } from '../../types/medication';
 import {
@@ -20,18 +22,26 @@ import {
   isDoseDue,
   getTimeRemaining,
 } from '../../utils/dateUtils';
+import { EditDoseDialog } from './EditDoseDialog';
 
 interface MedicationCardProps {
   med: MedicationConfig;
   logs: string[];
   onLogDose: (med: MedicationConfig) => void;
+  onUpdateLastDose?: (med: MedicationConfig, newTimestamp: string) => void;
+  onDeleteLastDose?: (med: MedicationConfig) => void;
+  onAddDoseWithTime?: (med: MedicationConfig, timestamp: string) => void;
 }
 
 export const MedicationCard: React.FC<MedicationCardProps> = ({
   med,
   logs,
   onLogDose,
+  onUpdateLastDose,
+  onDeleteLastDose,
+  onAddDoseWithTime,
 }) => {
+  const [editDialogOpen, setEditDialogOpen] = useState(false);
   const dosesTaken = logs.length;
   const lastDoseStr = dosesTaken > 0 ? logs[dosesTaken - 1] : null;
   const nextDoseTime = getNextDoseTime(lastDoseStr, med.gapHours);
@@ -117,25 +127,72 @@ export const MedicationCard: React.FC<MedicationCardProps> = ({
       {/* Timing Information Grid */}
       <Grid container spacing={2} sx={{ mb: 3, flexGrow: 1 }}>
         <Grid size={{ xs: 6 }}>
-          <Box
-            sx={{
-              p: 1.5,
-              bgcolor: 'background.default',
-              borderRadius: 2,
-              textAlign: 'center',
-              height: '100%',
-              display: 'flex',
-              flexDirection: 'column',
-              justifyContent: 'center',
-            }}
+          <Tooltip
+            title={
+              dosesTaken > 0
+                ? 'Click to edit last dose time'
+                : 'Click to set custom dose time'
+            }
+            arrow
           >
-            <Typography variant="caption" color="text.secondary" sx={{ display: 'block' }}>
-              Last Dose
-            </Typography>
-            <Typography variant="body1" sx={{ fontWeight: 'bold' }}>
-              {lastDoseStr ? formatTime(lastDoseStr) : '--:--'}
-            </Typography>
-          </Box>
+            <Box
+              onClick={() => setEditDialogOpen(true)}
+              role="button"
+              tabIndex={0}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' || e.key === ' ') {
+                  e.preventDefault();
+                  setEditDialogOpen(true);
+                }
+              }}
+              sx={{
+                p: 1.5,
+                bgcolor: 'background.default',
+                borderRadius: 2,
+                textAlign: 'center',
+                height: '100%',
+                display: 'flex',
+                flexDirection: 'column',
+                justifyContent: 'center',
+                cursor: 'pointer',
+                border: '1px solid',
+                borderColor: 'transparent',
+                transition: 'all 0.2s ease',
+                '&:hover': {
+                  bgcolor: 'action.hover',
+                  borderColor: `${med.color}.main`,
+                  boxShadow: '0 2px 8px rgba(0,0,0,0.06)',
+                  transform: 'translateY(-1px)',
+                },
+              }}
+            >
+              <Box
+                sx={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: 0.5,
+                }}
+              >
+                <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 600 }}>
+                  Last Dose
+                </Typography>
+                <EditIcon
+                  sx={{
+                    fontSize: 13,
+                    color: `${med.color}.main`,
+                    opacity: 0.75,
+                  }}
+                />
+              </Box>
+              <Typography variant="body1" sx={{ fontWeight: 'bold', mt: 0.25 }}>
+                {lastDoseStr ? formatTime(lastDoseStr) : '--:--'}
+              </Typography>
+              <Typography variant="caption" sx={{ fontSize: '0.68rem', color: 'text.secondary', opacity: 0.75 }}>
+                {dosesTaken > 0 ? 'Tap to edit' : 'Tap to set'}
+              </Typography>
+            </Box>
+          </Tooltip>
         </Grid>
 
         <Grid size={{ xs: 6 }}>
@@ -189,6 +246,28 @@ export const MedicationCard: React.FC<MedicationCardProps> = ({
           ? 'Log Dose Now'
           : `Wait ${med.gapHours} Hours`}
       </Button>
+
+      {/* Edit Last Dose Dialog */}
+      <EditDoseDialog
+        open={editDialogOpen}
+        onClose={() => setEditDialogOpen(false)}
+        med={med}
+        currentTimestamp={lastDoseStr}
+        isNewDose={dosesTaken === 0}
+        doseNumber={dosesTaken}
+        onSave={(newTimestamp) => {
+          if (dosesTaken === 0 && onAddDoseWithTime) {
+            onAddDoseWithTime(med, newTimestamp);
+          } else if (onUpdateLastDose) {
+            onUpdateLastDose(med, newTimestamp);
+          }
+        }}
+        onDelete={
+          dosesTaken > 0 && onDeleteLastDose
+            ? () => onDeleteLastDose(med)
+            : undefined
+        }
+      />
     </Paper>
   );
 };

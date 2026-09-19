@@ -79,6 +79,79 @@ export const useMedicationLogs = () => {
     [logs]
   );
 
+  const updateDose = useCallback(
+    (medId: string, doseIndex: number, newTimestamp: string) => {
+      setLogs((prev) => {
+        const currentLogs = prev[medId] || [];
+        if (doseIndex < 0 || doseIndex >= currentLogs.length) {
+          return prev;
+        }
+        const updated = [...currentLogs];
+        updated[doseIndex] = newTimestamp;
+        updated.sort((a, b) => new Date(a).getTime() - new Date(b).getTime());
+        return {
+          ...prev,
+          [medId]: updated,
+        };
+      });
+    },
+    []
+  );
+
+  const updateLastDose = useCallback(
+    (medId: string, newTimestamp: string) => {
+      setLogs((prev) => {
+        const currentLogs = prev[medId] || [];
+        if (currentLogs.length === 0) {
+          return {
+            ...prev,
+            [medId]: [newTimestamp],
+          };
+        }
+        const updated = [...currentLogs];
+        updated[updated.length - 1] = newTimestamp;
+        updated.sort((a, b) => new Date(a).getTime() - new Date(b).getTime());
+        return {
+          ...prev,
+          [medId]: updated,
+        };
+      });
+    },
+    []
+  );
+
+  const deleteDose = useCallback(
+    (medId: string, doseIndex: number) => {
+      setLogs((prev) => {
+        const currentLogs = prev[medId] || [];
+        if (doseIndex < 0 || doseIndex >= currentLogs.length) {
+          return prev;
+        }
+        const updated = currentLogs.filter((_, idx) => idx !== doseIndex);
+        return {
+          ...prev,
+          [medId]: updated,
+        };
+      });
+    },
+    []
+  );
+
+  const addDoseWithTime = useCallback(
+    (medId: string, timestamp: string) => {
+      setLogs((prev) => {
+        const currentLogs = prev[medId] || [];
+        const updated = [...currentLogs, timestamp];
+        updated.sort((a, b) => new Date(a).getTime() - new Date(b).getTime());
+        return {
+          ...prev,
+          [medId]: updated,
+        };
+      });
+    },
+    []
+  );
+
   const resetLogs = useCallback(() => {
     const emptyState: DoseLogs = {};
     MEDICATIONS.forEach((med) => {
@@ -90,6 +163,10 @@ export const useMedicationLogs = () => {
   return {
     logs,
     logDose,
+    updateLastDose,
+    updateDose,
+    deleteDose,
+    addDoseWithTime,
     resetLogs,
   };
 };

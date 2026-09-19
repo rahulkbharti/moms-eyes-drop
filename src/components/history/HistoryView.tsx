@@ -1,4 +1,4 @@
-import type React from 'react';
+import React, { useState } from 'react';
 import {
   Paper,
   Typography,
@@ -8,20 +8,37 @@ import {
   ListItem,
   ListItemIcon,
   ListItemText,
+  IconButton,
+  Tooltip,
 } from '@mui/material';
 import {
   History as HistoryIcon,
   CheckCircle as CheckCircleIcon,
+  Edit as EditIcon,
 } from '@mui/icons-material';
 import type { DoseLogs, MedicationConfig } from '../../types/medication';
 import { formatDate, formatTime } from '../../utils/dateUtils';
+import { EditDoseDialog } from '../medication/EditDoseDialog';
 
 interface HistoryViewProps {
   medications: MedicationConfig[];
   logs: DoseLogs;
+  onUpdateDose?: (medId: string, index: number, newTimestamp: string) => void;
+  onDeleteDose?: (medId: string, index: number) => void;
 }
 
-export const HistoryView: React.FC<HistoryViewProps> = ({ medications, logs }) => {
+export const HistoryView: React.FC<HistoryViewProps> = ({
+  medications,
+  logs,
+  onUpdateDose,
+  onDeleteDose,
+}) => {
+  const [editingDose, setEditingDose] = useState<{
+    med: MedicationConfig;
+    index: number;
+    timestamp: string;
+  } | null>(null);
+
   return (
     <Paper
       elevation={2}
@@ -71,7 +88,30 @@ export const HistoryView: React.FC<HistoryViewProps> = ({ medications, logs }) =
               ) : (
                 <List dense sx={{ bgcolor: 'grey.50', borderRadius: 2, p: 1 }}>
                   {medLogs.map((timeStr, index) => (
-                    <ListItem key={index} sx={{ py: 0.5 }}>
+                    <ListItem
+                      key={index}
+                      sx={{ py: 0.5 }}
+                      secondaryAction={
+                        onUpdateDose ? (
+                          <Tooltip title="Edit this dose">
+                            <IconButton
+                              edge="end"
+                              size="small"
+                              onClick={() =>
+                                setEditingDose({
+                                  med,
+                                  index,
+                                  timestamp: timeStr,
+                                })
+                              }
+                              sx={{ color: 'text.secondary' }}
+                            >
+                              <EditIcon sx={{ fontSize: 16 }} />
+                            </IconButton>
+                          </Tooltip>
+                        ) : undefined
+                      }
+                    >
                       <ListItemIcon sx={{ minWidth: 36 }}>
                         <CheckCircleIcon color="success" fontSize="small" />
                       </ListItemIcon>
@@ -91,6 +131,27 @@ export const HistoryView: React.FC<HistoryViewProps> = ({ medications, logs }) =
           );
         })}
       </Grid>
+
+      {/* Edit Dialog for History items */}
+      {editingDose && (
+        <EditDoseDialog
+          open={Boolean(editingDose)}
+          onClose={() => setEditingDose(null)}
+          med={editingDose.med}
+          currentTimestamp={editingDose.timestamp}
+          doseNumber={editingDose.index + 1}
+          onSave={(newTimestamp) => {
+            if (onUpdateDose) {
+              onUpdateDose(editingDose.med.id, editingDose.index, newTimestamp);
+            }
+          }}
+          onDelete={
+            onDeleteDose
+              ? () => onDeleteDose(editingDose.med.id, editingDose.index)
+              : undefined
+          }
+        />
+      )}
     </Paper>
   );
 };
